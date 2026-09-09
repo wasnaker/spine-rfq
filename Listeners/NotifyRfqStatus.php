@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Rfq\Listeners;
 
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
 use Modules\Customer\Models\CustomerStaff;
 use Modules\Rfq\Models\Rfq;
 use Modules\Rfq\Notifications\RfqStatusNotification;
 use Modules\Surveyor\Models\SurveyorStaff;
+use Spine\Events\EntityDeleted;
 use Spine\Events\EntityUpdated;
 use App\Models\User;
 
@@ -38,6 +40,21 @@ class NotifyRfqStatus
 
         // Notifikasi dikirim ke pihak LAWAN dari pelaku transisi.
         $this->notifyParty($rfq, $actor === 'customer' ? 'surveyor' : 'customer', $new);
+    }
+
+    /**
+     * HOOK delete — bersihkan notifikasi bell yang menunjuk entity ini
+     * (data JSON berisi rfq_id). Mencegah notif mati (link ke RFQ terhapus).
+     */
+    public function deleted(EntityDeleted $event): void
+    {
+        if (! $event->entity instanceof Rfq) {
+            return;
+        }
+
+        DatabaseNotification::query()
+            ->whereRaw('JSON_EXTRACT(data, "$.data.rfq_id") = ?', [$event->entity->getKey()])
+            ->delete();
     }
 
     private function notifyParty(Rfq $rfq, string $party, string $status, bool $notifyAll = false): void

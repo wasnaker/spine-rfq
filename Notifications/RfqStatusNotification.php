@@ -41,6 +41,7 @@ class RfqStatusNotification extends BaseNotification
             data: [
                 'formatted_number' => $formattedNumber,
                 'status' => $status,
+                'rfq_id' => $rfqId,
             ],
         );
     }

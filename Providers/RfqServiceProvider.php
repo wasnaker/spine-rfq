@@ -23,6 +23,7 @@ class RfqServiceProvider extends ServiceProvider
         Event::listen(\Spine\Events\EntityCreated::class, LogRfqActivity::class . '@created');
         Event::listen(\Spine\Events\EntityUpdated::class, LogRfqActivity::class . '@updated');
         Event::listen(\Spine\Events\EntityUpdated::class, \Modules\Rfq\Listeners\NotifyRfqStatus::class . '@updated');
+        Event::listen(\Spine\Events\EntityDeleted::class, \Modules\Rfq\Listeners\NotifyRfqStatus::class . '@deleted');
         Event::listen(\Spine\Events\EntityDeleted::class, LogRfqActivity::class . '@deleted');
 
         if (class_exists(Workflow::class)) {
