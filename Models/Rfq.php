@@ -43,6 +43,12 @@ class Rfq extends Model
         return ['ulid'];
     }
 
+    /** JSON date selalu YYYY-MM-DD (tanpa jam) — date/expirydate utk tampilan. */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d');
+    }
+
     public const STATUS_DRAFT = 'draft';
     public const STATUS_SENT = 'sent';
     public const STATUS_DECLINED = 'declined';
