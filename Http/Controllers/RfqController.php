@@ -9,24 +9,65 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Connection\Services\ActorResolver;
 use Modules\Rfq\Models\Rfq;
 use Spine\Services\ActivityLogService;
 use Spine\Services\SettingService;
 
 /**
  * CRUD dokumen RFQ + transisi status (workflow code-driven, lihat Rfq::TRANSITIONS).
+ *
+ * Scoping: user dengan entity customer (customers.admin_id via ActorResolver)
+ * HANYA melihat/membuat RFQ milik customer-nya sendiri; entity surveyor hanya
+ * RFQ yang di-assign ke dirinya. Non-entity (platform) melihat semua.
  */
 class RfqController extends Controller
 {
     public function __construct(
         private readonly ActivityLogService $activityLog,
         private readonly SettingService $settings,
+        private readonly ActorResolver $actors,
     ) {
+    }
+
+    private function isFullAccess(Request $request): bool
+    {
+        return ! in_array($this->actors->resolve($request->user())['type'] ?? null, ['customer', 'surveyor'], true);
+    }
+
+    private function scopeToActor(Request $request, $query): void
+    {
+        if ($this->isFullAccess($request)) {
+            return;
+        }
+
+        $actor = $this->actors->resolve($request->user());
+
+        if ($actor['type'] === 'surveyor') {
+            $query->where('surveyor_id', $actor['entity']->id);
+        } else {
+            $query->where('customer_id', $actor['entity']->id);
+        }
+    }
+
+    private function allowAccessTo(Request $request, Rfq $rfq): bool
+    {
+        if ($this->isFullAccess($request)) {
+            return true;
+        }
+
+        $actor = $this->actors->resolve($request->user());
+
+        return $actor['type'] === 'surveyor'
+            ? $rfq->surveyor_id === $actor['entity']->id
+            : $rfq->customer_id === $actor['entity']->id;
     }
 
     public function index(Request $request): JsonResponse
     {
         $query = Rfq::with(['customer:id,code,name,type', 'surveyor:id,code,name,type', 'createdBy:id,name']);
+
+        $this->scopeToActor($request, $query);
 
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -53,7 +94,7 @@ class RfqController extends Controller
         $validated = $request->validate([
             'date'            => ['required', 'date'],
             'expirydate'      => ['nullable', 'date', 'after_or_equal:date'],
-            'customer_id'     => ['required', 'integer', 'exists:customers,id'],
+            'customer_id'     => ['nullable', 'integer', 'exists:customers,id'],
             'surveyor_id'     => ['nullable', 'integer', 'exists:surveyors,id'],
             'requestor_id'    => ['nullable', 'integer', 'exists:users,id'],
             'status'          => ['sometimes', 'string', 'in:draft,sent,accepted,declined,expired'],
@@ -75,6 +116,14 @@ class RfqController extends Controller
         ]);
 
         $rfq = DB::transaction(function () use ($validated, $request) {
+            // Customer entity: RFQ selalu untuk customer-nya sendiri (admin HO/branch).
+            if (! $this->isFullAccess($request)) {
+                $actor = $this->actors->resolve($request->user());
+                $validated['customer_id'] = $actor['entity']->id;
+            } elseif (empty($validated['customer_id'])) {
+                abort(422, 'The customer id field is required.');
+            }
+
             $number = (int) Rfq::withTrashed()->max('number') + 1;
             $prefix = (string) ($this->settings->get('rfq_prefix', 'RFQ-'));
             $length = max(1, (int) ($this->settings->get('rfq_number_length', 5)));
@@ -89,7 +138,31 @@ class RfqController extends Controller
                 'status'           => $validated['status'] ?? Rfq::STATUS_DRAFT,
             ]);
 
-            $this->syncItems($rfq, $validated['items'] ?? []);
+            // Customer pilih customer-equipment miliknya -> otomatis jadi line item
+            // (description=unit_name, qty=1, rate=0 — surveyor isi rate saat edit).
+            $items = $validated['items'] ?? [];
+            if (! $items && ! empty($validated['equipment'])) {
+                $ces = \Modules\Equipment\Models\CustomerEquipment::with('equipment:id,unit,rate')
+                    ->whereIn('id', collect($validated['equipment'])->pluck('customer_equipment_id'))
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($validated['equipment'] as $eq) {
+                    $ce = $ces->get($eq['customer_equipment_id']);
+                    if (! $ce) {
+                        continue;
+                    }
+                    $items[] = [
+                        'item_id'     => $eq['item_id'] ?? $ce->equipment_id,
+                        'description' => $ce->unit_name,
+                        'qty'         => 1,
+                        'rate'        => 0,
+                        'unit'        => $ce->equipment?->unit,
+                    ];
+                }
+            }
+
+            $this->syncItems($rfq, $items);
             $this->syncEquipment($rfq, $validated['equipment'] ?? []);
 
             return $rfq;
@@ -98,11 +171,11 @@ class RfqController extends Controller
         return response()->json($rfq->load(['items', 'equipment']), 201);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
         $rfq = Rfq::with(['customer:id,code,name,type', 'surveyor:id,code,name,type', 'createdBy:id,name', 'items', 'equipment.customerEquipment:id,unit_code,unit_name'])->find($id);
 
-        if (! $rfq) {
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
             return response()->json(['message' => 'Rfq not found'], 404);
         }
 
@@ -113,7 +186,7 @@ class RfqController extends Controller
     {
         $rfq = Rfq::find($id);
 
-        if (! $rfq) {
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
             return response()->json(['message' => 'Rfq not found'], 404);
         }
 
@@ -162,7 +235,7 @@ class RfqController extends Controller
     {
         $rfq = Rfq::find($id);
 
-        if (! $rfq) {
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
             return response()->json(['message' => 'Rfq not found'], 404);
         }
 
@@ -183,11 +256,11 @@ class RfqController extends Controller
         return response()->json($rfq);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(int $id, Request $request): JsonResponse
     {
         $rfq = Rfq::find($id);
 
-        if (! $rfq) {
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
             return response()->json(['message' => 'Rfq not found'], 404);
         }
 
@@ -196,11 +269,11 @@ class RfqController extends Controller
         return response()->json(['message' => 'Rfq deleted']);
     }
 
-    public function activityLogs(int $id): JsonResponse
+    public function activityLogs(int $id, Request $request): JsonResponse
     {
         $rfq = Rfq::find($id);
 
-        if (! $rfq) {
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
             return response()->json(['message' => 'Rfq not found'], 404);
         }
 
