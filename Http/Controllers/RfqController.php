@@ -13,6 +13,7 @@ use Modules\Connection\Services\ActorResolver;
 use Modules\Rfq\Models\Rfq;
 use Spine\Services\ActivityLogService;
 use Spine\Services\SettingService;
+use Spine\Support\EntityCode;
 
 /**
  * CRUD dokumen RFQ + transisi status (workflow code-driven, lihat Rfq::TRANSITIONS).
@@ -120,19 +121,24 @@ class RfqController extends Controller
                 abort(422, 'The customer id field is required.');
             }
 
-            $number = (int) Rfq::withTrashed()->max('number') + 1;
+            // Nomor RFQ = prefix + EntityCode::encode(id, len) (pola customer;
+            // tanpa reset tahunan — id auto-increment mulai rfq_start_number).
             $prefix = (string) ($this->settings->get('rfq_prefix', 'RFQ-'));
-            $length = max(1, (int) ($this->settings->get('rfq_number_length', 5)));
+            $codeLength = max(1, (int) ($this->settings->get('rfq_code_length', 5)));
 
             $rfq = Rfq::create([
                 ...$validated,
-                'number'           => $number,
+                'number'           => 0,
                 'prefix'           => $prefix,
-                'formatted_number' => $prefix . str_pad((string) $number, $length, '0', STR_PAD_LEFT),
                 'hash'             => Str::random(40),
                 'created_by'       => $request->user()->id,
                 'status'           => $validated['status'] ?? Rfq::STATUS_DRAFT,
             ]);
+
+            $rfq->forceFill([
+                'number'           => $rfq->id,
+                'formatted_number' => $prefix . EntityCode::encode($rfq->id, $codeLength),
+            ])->saveQuietly();
 
             // Customer pilih customer-equipment miliknya -> otomatis jadi line item
             // (hanya daftar item — tanpa rate/qty).

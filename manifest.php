@@ -28,8 +28,9 @@ return [
             'icon'     => '📄',
             'position' => 50,
             'fields'   => [
-                ['key' => 'rfq_prefix',       'label' => 'Prefix',      'type' => 'text',   'default' => 'RFQ-'],
-                ['key' => 'rfq_number_length', 'label' => 'Panjang Nomor', 'type' => 'number', 'default' => '5'],
+                ['key' => 'rfq_prefix',       'label' => 'Prefix',       'type' => 'text',   'default' => 'RFQ-'],
+                ['key' => 'rfq_start_number',  'label' => 'Start Number', 'type' => 'number', 'default' => '1011027'],
+                ['key' => 'rfq_code_length',   'label' => 'Panjang Kode', 'type' => 'number', 'default' => '5'],
             ],
         ],
     ],
