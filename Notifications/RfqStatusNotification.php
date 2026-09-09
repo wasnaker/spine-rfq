@@ -37,10 +37,10 @@ class RfqStatusNotification extends BaseNotification
             title: "RFQ {$formattedNumber} — {$label}",
             body: self::BODIES[$status] ?? "Status berubah: {$status}",
             module: 'rfq',
+            url: $rfqId ? "/rfqs#{$rfqId}" : null,
             data: [
                 'formatted_number' => $formattedNumber,
                 'status' => $status,
-                'url' => $rfqId ? "/rfqs#{$rfqId}" : null,
             ],
         );
     }
