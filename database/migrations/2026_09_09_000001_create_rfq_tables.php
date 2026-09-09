@@ -23,9 +23,6 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('requestor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('status', 20)->default('draft'); // draft|sent|accepted|declined|expired
-            $table->decimal('subtotal', 15, 2)->default(0);
-            $table->decimal('total_tax', 15, 2)->default(0);
-            $table->decimal('total', 15, 2)->default(0);
             $table->text('terms')->nullable();
             $table->text('clientnote')->nullable();
             $table->text('adminnote')->nullable();

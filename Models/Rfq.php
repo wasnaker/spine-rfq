@@ -24,7 +24,7 @@ class Rfq extends Model
         'number', 'prefix', 'formatted_number', 'hash',
         'date', 'expirydate',
         'customer_id', 'surveyor_id', 'created_by', 'requestor_id',
-        'status', 'subtotal', 'total_tax', 'total',
+        'status',
         'terms', 'clientnote', 'adminnote', 'reference_no', 'currency',
         'pipeline_order', 'is_expiry_notified',
         'acceptance_firstname', 'acceptance_lastname', 'acceptance_email',
@@ -34,9 +34,6 @@ class Rfq extends Model
     protected $casts = [
         'date'               => 'date',
         'expirydate'         => 'date',
-        'subtotal'           => 'decimal:2',
-        'total_tax'          => 'decimal:2',
-        'total'              => 'decimal:2',
         'is_expiry_notified' => 'boolean',
         'acceptance_date'    => 'datetime',
     ];
@@ -104,9 +101,6 @@ class Rfq extends Model
             'customer_id'     => 'Customer',
             'surveyor_id'     => 'Surveyor',
             'status'          => 'Status',
-            'subtotal'        => 'Subtotal',
-            'total_tax'       => 'Pajak',
-            'total'           => 'Total',
             'terms'           => 'Ketentuan',
             'clientnote'      => 'Catatan Customer',
             'adminnote'       => 'Catatan Admin',

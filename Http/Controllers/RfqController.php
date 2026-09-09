@@ -150,8 +150,6 @@ class RfqController extends Controller
             if ($request->has('equipment')) {
                 $this->syncEquipment($rfq, $validated['equipment'] ?? []);
             }
-
-            $this->recalculate($rfq);
         });
 
         return response()->json($rfq->load(['items', 'equipment']));
@@ -239,30 +237,5 @@ class RfqController extends Controller
         foreach ($equipment as $eq) {
             $rfq->equipment()->create($eq);
         }
-    }
-
-    /**
-     * Hitung ulang subtotal/total dari line items (pola legacy: tax string "NAMA|rate").
-     */
-    private function recalculate(Rfq $rfq): void
-    {
-        $subtotal = 0.0;
-        $totalTax = 0.0;
-
-        foreach ($rfq->items as $item) {
-            $line = (float) $item->qty * (float) $item->rate;
-            $subtotal += $line;
-
-            if ($item->tax) {
-                $rate = (float) (Str::of($item->tax)->afterLast('|')->toString() ?: 0);
-                $totalTax += $line * ($rate / 100);
-            }
-        }
-
-        $rfq->forceFill([
-            'subtotal'  => $subtotal,
-            'total_tax' => $totalTax,
-            'total'     => $subtotal + $totalTax,
-        ])->saveQuietly();
     }
 }
