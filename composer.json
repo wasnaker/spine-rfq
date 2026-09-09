@@ -1,0 +1,19 @@
+{
+    "name": "wasnaker/spine-rfq",
+    "description": "Spine Rfq module — dokumen RFQ (customer -> surveyor).",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Rfq\\": ""
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Rfq\\Providers\\RfqServiceProvider"
+            ]
+        }
+    },
+    "require": {}
+}

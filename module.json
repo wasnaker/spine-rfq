@@ -1,0 +1,11 @@
+{
+    "name": "Rfq",
+    "alias": "rfq",
+    "description": "Dokumen RFQ (customer -> surveyor) dengan workflow draft/sent/accepted/declined/expired.",
+    "version": "1.0.0",
+    "active": true,
+    "order": 0,
+    "providers": [
+        "Modules\\Rfq\\Providers\\RfqServiceProvider"
+    ]
+}
