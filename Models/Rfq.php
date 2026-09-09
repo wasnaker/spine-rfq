@@ -68,7 +68,7 @@ class Rfq extends Model
             self::STATUS_DRAFT    => 'customer',   // retract
             self::STATUS_ACCEPTED => 'surveyor',   // accept
             self::STATUS_DECLINED => 'surveyor',   // decline
-            self::STATUS_EXPIRED  => 'surveyor',   // expire (juga auto-cron expirydate < hari ini)
+            self::STATUS_EXPIRED  => 'customer',   // expire manual oleh customer (juga auto-cron expirydate < hari ini)
         ],
     ];
 

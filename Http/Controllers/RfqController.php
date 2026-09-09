@@ -45,7 +45,8 @@ class RfqController extends Controller
         $actor = $this->actors->resolve($request->user());
 
         if ($actor['type'] === 'surveyor') {
-            $query->where('surveyor_id', $actor['entity']->id);
+            $query->where('surveyor_id', $actor['entity']->id)
+                ->where('status', '!=', Rfq::STATUS_DRAFT);
         } else {
             $query->where('customer_id', $actor['entity']->id);
         }
@@ -60,7 +61,7 @@ class RfqController extends Controller
         $actor = $this->actors->resolve($request->user());
 
         return $actor['type'] === 'surveyor'
-            ? $rfq->surveyor_id === $actor['entity']->id
+            ? $rfq->surveyor_id === $actor['entity']->id && $rfq->status !== Rfq::STATUS_DRAFT
             : $rfq->customer_id === $actor['entity']->id;
     }
 
@@ -284,6 +285,18 @@ class RfqController extends Controller
             return response()->json([
                 'message' => "Transisi {$rfq->status} -> {$validated['status']} tidak diizinkan",
             ], 422);
+        }
+
+        // Enforce actor workflow: transisi hanya boleh dijalankan oleh actor-nya
+        // (TRANSITIONS: dari => [ke => actor]). Non-entity (platform) full access.
+        if (! $this->isFullAccess($request)) {
+            $actor = $this->actors->resolve($request->user());
+            $requiredActor = $allowed[$validated['status']];
+            if ($actor['type'] !== $requiredActor) {
+                return response()->json([
+                    'message' => "Transisi {$rfq->status} -> {$validated['status']} hanya untuk {$requiredActor}",
+                ], 403);
+            }
         }
 
         $rfq->update(['status' => $validated['status']]);
