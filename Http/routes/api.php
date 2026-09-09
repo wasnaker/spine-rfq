@@ -24,6 +24,7 @@ use Modules\Rfq\Http\Controllers\RfqController;
 Route::prefix('api/v1')->middleware('auth:sanctum')->group(function () {
     Route::prefix('rfqs')->group(function () {
         Route::get('/', [RfqController::class, 'index'])->middleware('permission:rfq:view|rfq:view_own');
+        Route::get('/surveyor-options', [RfqController::class, 'surveyorOptions'])->middleware('permission:rfq:create');
         Route::post('/', [RfqController::class, 'store'])->middleware('permission:rfq:create');
         Route::get('/{id}', [RfqController::class, 'show'])->whereNumber('id')->middleware('permission:rfq:view|rfq:view_own');
         Route::put('/{id}', [RfqController::class, 'update'])->whereNumber('id')->middleware('permission:rfq:edit|rfq:edit_own');

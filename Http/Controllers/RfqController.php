@@ -90,13 +90,41 @@ class RfqController extends Controller
         return response()->json(['data' => $query->orderByDesc('id')->get()]);
     }
 
+    /**
+     * Opsi surveyor utk form create/edit RFQ: surveyor dari connections
+     * (status active) yang berelasi dengan customer.
+     */
+    public function surveyorOptions(Request $request): JsonResponse
+    {
+        if ($this->isFullAccess($request)) {
+            $customerId = $request->integer('customer_id');
+            if (! $customerId) {
+                return response()->json(['message' => 'The customer id field is required.'], 422);
+            }
+        } else {
+            $actor = $this->actors->resolve($request->user());
+            $customerId = $actor['entity']->id;
+        }
+
+        $rows = \Illuminate\Support\Facades\DB::table('connections')
+            ->join('surveyors', 'surveyors.id', '=', 'connections.surveyor_id')
+            ->where('connections.customer_id', $customerId)
+            ->where('connections.status', 'active')
+            ->whereNull('connections.deleted_at')
+            ->select('surveyors.id', 'surveyors.code', 'surveyors.name', 'surveyors.type')
+            ->orderBy('surveyors.name')
+            ->get();
+
+        return response()->json(['data' => $rows]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'date'            => ['required', 'date'],
             'expirydate'      => ['nullable', 'date', 'after_or_equal:date'],
             'customer_id'     => ['nullable', 'integer', 'exists:customers,id'],
-            'surveyor_id'     => ['nullable', 'integer', 'exists:surveyors,id'],
+            'surveyor_id'     => ['required', 'integer', 'exists:surveyors,id'],
             'requestor_id'    => ['nullable', 'integer', 'exists:users,id'],
             'status'          => ['sometimes', 'string', 'in:draft,sent,accepted,declined,expired'],
             'terms'           => ['nullable', 'string'],
@@ -120,6 +148,8 @@ class RfqController extends Controller
             } elseif (empty($validated['customer_id'])) {
                 abort(422, 'The customer id field is required.');
             }
+
+            $this->assertSurveyorConnected((int) $validated['customer_id'], (int) $validated['surveyor_id']);
 
             // Nomor RFQ = prefix + EntityCode::encode(id, len) (pola customer;
             // tanpa reset tahunan — id auto-increment mulai rfq_start_number).
@@ -193,7 +223,7 @@ class RfqController extends Controller
             'date'            => ['sometimes', 'date'],
             'expirydate'      => ['nullable', 'date', 'after_or_equal:date'],
             'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
-            'surveyor_id'     => ['nullable', 'integer', 'exists:surveyors,id'],
+            'surveyor_id'     => ['sometimes', 'integer', 'exists:surveyors,id'],
             'requestor_id'    => ['nullable', 'integer', 'exists:users,id'],
             'terms'           => ['nullable', 'string'],
             'clientnote'      => ['nullable', 'string'],
@@ -210,6 +240,12 @@ class RfqController extends Controller
 
         DB::transaction(function () use ($rfq, $validated, $request) {
             unset($validated['items'], $validated['equipment']);
+
+            if (isset($validated['surveyor_id'])) {
+                $customerId = $this->isFullAccess($request) ? $rfq->customer_id : $this->actors->resolve($request->user())['entity']->id;
+                $this->assertSurveyorConnected((int) $customerId, (int) $validated['surveyor_id']);
+            }
+
             $rfq->update($validated);
 
             if ($request->has('items')) {
@@ -317,6 +353,20 @@ class RfqController extends Controller
             ]);
 
         return response()->json(['data' => $logs]);
+    }
+
+    private function assertSurveyorConnected(int $customerId, int $surveyorId): void
+    {
+        $connected = \Illuminate\Support\Facades\DB::table('connections')
+            ->where('customer_id', $customerId)
+            ->where('surveyor_id', $surveyorId)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if (! $connected) {
+            abort(422, 'Surveyor tidak terhubung dengan customer ini.');
+        }
     }
 
     private function syncItems(Rfq $rfq, array $items): void
