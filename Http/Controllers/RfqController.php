@@ -55,13 +55,8 @@ class RfqController extends Controller
             'expirydate'      => ['nullable', 'date', 'after_or_equal:date'],
             'customer_id'     => ['required', 'integer', 'exists:customers,id'],
             'surveyor_id'     => ['nullable', 'integer', 'exists:surveyors,id'],
-            'sale_agent'      => ['nullable', 'integer', 'exists:users,id'],
             'requestor_id'    => ['nullable', 'integer', 'exists:users,id'],
             'status'          => ['sometimes', 'string', 'in:draft,sent,accepted,declined,expired'],
-            'adjustment'      => ['nullable', 'numeric'],
-            'discount_percent'=> ['nullable', 'numeric', 'min:0'],
-            'discount_total'  => ['nullable', 'numeric', 'min:0'],
-            'discount_type'   => ['nullable', 'string', 'max:30'],
             'terms'           => ['nullable', 'string'],
             'clientnote'      => ['nullable', 'string'],
             'adminnote'       => ['nullable', 'string'],
@@ -105,7 +100,7 @@ class RfqController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $rfq = Rfq::with(['customer:id,code,name,type', 'surveyor:id,code,name,type', 'createdBy:id,name', 'saleAgent:id,name', 'items', 'equipment.customerEquipment:id,unit_code,unit_name'])->find($id);
+        $rfq = Rfq::with(['customer:id,code,name,type', 'surveyor:id,code,name,type', 'createdBy:id,name', 'items', 'equipment.customerEquipment:id,unit_code,unit_name'])->find($id);
 
         if (! $rfq) {
             return response()->json(['message' => 'Rfq not found'], 404);
@@ -127,12 +122,7 @@ class RfqController extends Controller
             'expirydate'      => ['nullable', 'date', 'after_or_equal:date'],
             'customer_id'     => ['sometimes', 'integer', 'exists:customers,id'],
             'surveyor_id'     => ['nullable', 'integer', 'exists:surveyors,id'],
-            'sale_agent'      => ['nullable', 'integer', 'exists:users,id'],
             'requestor_id'    => ['nullable', 'integer', 'exists:users,id'],
-            'adjustment'      => ['nullable', 'numeric'],
-            'discount_percent'=> ['nullable', 'numeric', 'min:0'],
-            'discount_total'  => ['nullable', 'numeric', 'min:0'],
-            'discount_type'   => ['nullable', 'string', 'max:30'],
             'terms'           => ['nullable', 'string'],
             'clientnote'      => ['nullable', 'string'],
             'adminnote'       => ['nullable', 'string'],
@@ -269,13 +259,10 @@ class RfqController extends Controller
             }
         }
 
-        $discount = (float) ($rfq->discount_total ?? 0);
-        $adjustment = (float) ($rfq->adjustment ?? 0);
-
         $rfq->forceFill([
-            'subtotal'   => $subtotal,
-            'total_tax'  => $totalTax,
-            'total'      => $subtotal + $totalTax - $discount + $adjustment,
+            'subtotal'  => $subtotal,
+            'total_tax' => $totalTax,
+            'total'     => $subtotal + $totalTax,
         ])->saveQuietly();
     }
 }

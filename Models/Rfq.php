@@ -23,9 +23,8 @@ class Rfq extends Model
     protected $fillable = [
         'number', 'prefix', 'formatted_number', 'hash',
         'date', 'expirydate',
-        'customer_id', 'surveyor_id', 'created_by', 'sale_agent', 'requestor_id',
-        'status', 'subtotal', 'total_tax', 'total', 'adjustment',
-        'discount_percent', 'discount_total', 'discount_type',
+        'customer_id', 'surveyor_id', 'created_by', 'requestor_id',
+        'status', 'subtotal', 'total_tax', 'total',
         'terms', 'clientnote', 'adminnote', 'reference_no', 'currency',
         'pipeline_order', 'is_expiry_notified',
         'acceptance_firstname', 'acceptance_lastname', 'acceptance_email',
@@ -38,9 +37,6 @@ class Rfq extends Model
         'subtotal'           => 'decimal:2',
         'total_tax'          => 'decimal:2',
         'total'              => 'decimal:2',
-        'adjustment'         => 'decimal:2',
-        'discount_percent'   => 'decimal:2',
-        'discount_total'     => 'decimal:2',
         'is_expiry_notified' => 'boolean',
         'acceptance_date'    => 'datetime',
     ];
@@ -88,11 +84,6 @@ class Rfq extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function saleAgent(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'sale_agent');
-    }
-
     public function items(): HasMany
     {
         return $this->hasMany(RfqItem::class, 'rfq_id');
@@ -112,12 +103,10 @@ class Rfq extends Model
             'expirydate'      => 'Berlaku Hingga',
             'customer_id'     => 'Customer',
             'surveyor_id'     => 'Surveyor',
-            'sale_agent'      => 'Sales',
             'status'          => 'Status',
             'subtotal'        => 'Subtotal',
             'total_tax'       => 'Pajak',
             'total'           => 'Total',
-            'adjustment'      => 'Penyesuaian',
             'terms'           => 'Ketentuan',
             'clientnote'      => 'Catatan Customer',
             'adminnote'       => 'Catatan Admin',

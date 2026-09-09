@@ -21,16 +21,11 @@ return new class extends Migration
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->foreignId('surveyor_id')->nullable()->constrained('surveyors')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('sale_agent')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('requestor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('status', 20)->default('draft'); // draft|sent|accepted|declined|expired
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('total_tax', 15, 2)->default(0);
             $table->decimal('total', 15, 2)->default(0);
-            $table->decimal('adjustment', 15, 2)->nullable();
-            $table->decimal('discount_percent', 15, 2)->default(0);
-            $table->decimal('discount_total', 15, 2)->default(0);
-            $table->string('discount_type', 30)->default('');
             $table->text('terms')->nullable();
             $table->text('clientnote')->nullable();
             $table->text('adminnote')->nullable();
