@@ -29,7 +29,7 @@ class RfqStatusNotification extends BaseNotification
         Rfq::STATUS_EXPIRED => 'RFQ kedaluwarsa.',
     ];
 
-    public function __construct(string $formattedNumber, string $status)
+    public function __construct(string $formattedNumber, string $status, ?int $rfqId = null)
     {
         $label = self::LABELS[$status] ?? $status;
 
@@ -37,7 +37,11 @@ class RfqStatusNotification extends BaseNotification
             title: "RFQ {$formattedNumber} — {$label}",
             body: self::BODIES[$status] ?? "Status berubah: {$status}",
             module: 'rfq',
-            data: ['formatted_number' => $formattedNumber, 'status' => $status],
+            data: [
+                'formatted_number' => $formattedNumber,
+                'status' => $status,
+                'url' => $rfqId ? "/rfqs#{$rfqId}" : null,
+            ],
         );
     }
 }

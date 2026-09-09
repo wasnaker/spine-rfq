@@ -52,7 +52,7 @@ class NotifyRfqStatus
 
         Notification::send(
             User::whereIn('id', $users)->get(),
-            new RfqStatusNotification($rfq->formatted_number, $status),
+            new RfqStatusNotification($rfq->formatted_number, $status, $rfq->id),
         );
     }
 
