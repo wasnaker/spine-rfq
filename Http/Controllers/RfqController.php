@@ -152,7 +152,8 @@ class RfqController extends Controller
             $this->assertSurveyorConnected((int) $validated['customer_id'], (int) $validated['surveyor_id']);
 
             // Nomor RFQ = prefix + EntityCode::encode(id, len) (pola customer;
-            // tanpa reset tahunan — id auto-increment mulai rfq_start_number).
+            // tanpa reset tahunan — id auto-increment mulai rfq_start_number,
+            // di-set via migration (000003/000004).
             $prefix = (string) ($this->settings->get('rfq_prefix', 'RFQ-'));
             $codeLength = max(1, (int) ($this->settings->get('rfq_code_length', 5)));
 
