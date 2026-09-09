@@ -264,6 +264,36 @@ class RfqController extends Controller
         return response()->json(['message' => 'Rfq deleted']);
     }
 
+    /**
+     * Daftar equipment (customer_equipment) yang dipilih di RFQ ini.
+     * Flat select — TabContent generik tidak render relasi nested.
+     */
+    public function equipment(int $id, Request $request): JsonResponse
+    {
+        $rfq = Rfq::find($id);
+
+        if (! $rfq || ! $this->allowAccessTo($request, $rfq)) {
+            return response()->json(['message' => 'Rfq not found'], 404);
+        }
+
+        $rows = \Modules\Rfq\Models\RfqEquipment::query()
+            ->join('customer_equipments', 'customer_equipments.id', '=', 'rfq_equipment.customer_equipment_id')
+            ->leftJoin('equipments', 'equipments.id', '=', 'rfq_equipment.item_id')
+            ->where('rfq_equipment.rfq_id', $id)
+            ->select(
+                'rfq_equipment.id',
+                'customer_equipments.unit_code',
+                'customer_equipments.unit_name',
+                'customer_equipments.serial_no',
+                'customer_equipments.location',
+                'equipments.name as katalog'
+            )
+            ->orderBy('customer_equipments.unit_name')
+            ->get();
+
+        return response()->json(['data' => $rows]);
+    }
+
     public function activityLogs(int $id, Request $request): JsonResponse
     {
         $rfq = Rfq::find($id);

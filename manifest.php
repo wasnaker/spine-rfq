@@ -45,6 +45,14 @@ return [
             'permission' => 'rfq:view|rfq:view_own',
         ],
         [
+            'slug'       => 'equipment',
+            'label'      => 'Equipment',
+            'icon'       => '🛠️',
+            'api'        => '/api/v1/rfqs/{id}/equipment',
+            'position'   => 15,
+            'permission' => 'rfq:view|rfq:view_own',
+        ],
+        [
             'slug'       => 'activity',
             'label'      => 'Activity',
             'icon'       => '🕐',

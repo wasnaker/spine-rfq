@@ -28,6 +28,7 @@ Route::prefix('api/v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [RfqController::class, 'show'])->whereNumber('id')->middleware('permission:rfq:view|rfq:view_own');
         Route::put('/{id}', [RfqController::class, 'update'])->whereNumber('id')->middleware('permission:rfq:edit|rfq:edit_own');
         Route::post('/{id}/transition', [RfqController::class, 'transition'])->whereNumber('id')->middleware('permission:rfq:mark_as');
+        Route::get('/{id}/equipment', [RfqController::class, 'equipment'])->whereNumber('id')->middleware('permission:rfq:view|rfq:view_own');
         Route::get('/{id}/activity-logs', [RfqController::class, 'activityLogs'])->whereNumber('id')->middleware('permission:rfq:view|rfq:view_own');
         Route::delete('/{id}', [RfqController::class, 'destroy'])->whereNumber('id')->middleware('permission:rfq:delete');
     });
