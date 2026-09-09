@@ -45,17 +45,13 @@ return new class extends Migration
             $table->index('formatted_number');
         });
 
-        // Line item RFQ.
+        // Line item RFQ (hanya daftar item — tanpa rate/qty).
         Schema::create('rfq_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rfq_id')->constrained('rfqs')->cascadeOnDelete();
             $table->foreignId('item_id')->nullable()->constrained('equipments')->nullOnDelete();
             $table->text('description');
             $table->text('long_description')->nullable();
-            $table->decimal('qty', 12, 2)->default(1);
-            $table->decimal('rate', 15, 2)->default(0);
-            $table->string('unit', 30)->nullable();
-            $table->string('tax', 100)->nullable(); // format legacy: "PPN|11"
             $table->integer('item_order')->default(0);
             $table->timestamps();
         });

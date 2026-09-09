@@ -12,13 +12,7 @@ class RfqItem extends Model
     protected $table = 'rfq_items';
 
     protected $fillable = [
-        'rfq_id', 'item_id', 'description', 'long_description',
-        'qty', 'rate', 'unit', 'tax', 'item_order',
-    ];
-
-    protected $casts = [
-        'qty'  => 'decimal:2',
-        'rate' => 'decimal:2',
+        'rfq_id', 'item_id', 'description', 'long_description', 'item_order',
     ];
 
     public function rfq(): BelongsTo

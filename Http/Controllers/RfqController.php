@@ -106,10 +106,6 @@ class RfqController extends Controller
             'items.*.description'     => ['required', 'string'],
             'items.*.long_description'=> ['nullable', 'string'],
             'items.*.item_id'         => ['nullable', 'integer', 'exists:equipments,id'],
-            'items.*.qty'             => ['required', 'numeric', 'min:0'],
-            'items.*.rate'            => ['required', 'numeric', 'min:0'],
-            'items.*.unit'            => ['nullable', 'string', 'max:30'],
-            'items.*.tax'             => ['nullable', 'string', 'max:100'],
             'equipment'       => ['nullable', 'array'],
             'equipment.*.customer_equipment_id' => ['required', 'integer', 'exists:customer_equipments,id'],
             'equipment.*.item_id'                 => ['nullable', 'integer', 'exists:equipments,id'],
@@ -139,10 +135,10 @@ class RfqController extends Controller
             ]);
 
             // Customer pilih customer-equipment miliknya -> otomatis jadi line item
-            // (description=unit_name, qty=1, rate=0 — surveyor isi rate saat edit).
+            // (hanya daftar item — tanpa rate/qty).
             $items = $validated['items'] ?? [];
             if (! $items && ! empty($validated['equipment'])) {
-                $ces = \Modules\Equipment\Models\CustomerEquipment::with('equipment:id,unit,rate')
+                $ces = \Modules\Equipment\Models\CustomerEquipment::with('equipment:id')
                     ->whereIn('id', collect($validated['equipment'])->pluck('customer_equipment_id'))
                     ->get()
                     ->keyBy('id');
@@ -155,9 +151,6 @@ class RfqController extends Controller
                     $items[] = [
                         'item_id'     => $eq['item_id'] ?? $ce->equipment_id,
                         'description' => $ce->unit_name,
-                        'qty'         => 1,
-                        'rate'        => 0,
-                        'unit'        => $ce->equipment?->unit,
                     ];
                 }
             }
@@ -204,10 +197,6 @@ class RfqController extends Controller
             'items.*.description'     => ['required', 'string'],
             'items.*.long_description'=> ['nullable', 'string'],
             'items.*.item_id'         => ['nullable', 'integer', 'exists:equipments,id'],
-            'items.*.qty'             => ['required', 'numeric', 'min:0'],
-            'items.*.rate'            => ['required', 'numeric', 'min:0'],
-            'items.*.unit'            => ['nullable', 'string', 'max:30'],
-            'items.*.tax'             => ['nullable', 'string', 'max:100'],
             'equipment'       => ['nullable', 'array'],
             'equipment.*.customer_equipment_id' => ['required', 'integer', 'exists:customer_equipments,id'],
             'equipment.*.item_id'                 => ['nullable', 'integer', 'exists:equipments,id'],
