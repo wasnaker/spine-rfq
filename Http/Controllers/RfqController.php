@@ -239,6 +239,9 @@ class RfqController extends Controller
         ]);
 
         DB::transaction(function () use ($rfq, $validated, $request) {
+            // Tangkap items/equipment SEBELUM unset — sync pakai nilai asli, bukan $validated yang sudah dibuang.
+            $items = $validated['items'] ?? null;
+            $equipment = $validated['equipment'] ?? null;
             unset($validated['items'], $validated['equipment']);
 
             if (isset($validated['surveyor_id'])) {
@@ -248,11 +251,11 @@ class RfqController extends Controller
 
             $rfq->update($validated);
 
-            if ($request->has('items')) {
-                $this->syncItems($rfq, $validated['items'] ?? []);
+            if ($items !== null) {
+                $this->syncItems($rfq, $items);
             }
-            if ($request->has('equipment')) {
-                $this->syncEquipment($rfq, $validated['equipment'] ?? []);
+            if ($equipment !== null) {
+                $this->syncEquipment($rfq, $equipment);
             }
         });
 
