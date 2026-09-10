@@ -20,6 +20,17 @@ class RfqServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/../Http/routes/api.php');
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
+        // HOOK Membership: daftarkan feature modul ini. Modul jalan tanpa
+        // Membership (class_exists guard), pola sama Workflow::register().
+        if (class_exists(\Modules\Membership\Support\FeatureRegistry::class)) {
+            \Modules\Membership\Support\FeatureRegistry::register([
+                'key'          => 'rfq',
+                'name'         => 'RFQ',
+                'capabilities' => ['view', 'create', 'edit', 'delete', 'export'],
+                'limits'       => ['rfq.active' => 10], // contoh limit, sesuaikan nanti
+            ]);
+        }
+
         Event::listen(\Spine\Events\EntityCreated::class, LogRfqActivity::class . '@created');
         Event::listen(\Spine\Events\EntityUpdated::class, LogRfqActivity::class . '@updated');
         Event::listen(\Spine\Events\EntityUpdated::class, \Modules\Rfq\Listeners\NotifyRfqStatus::class . '@updated');
